@@ -1,0 +1,4 @@
+workers,median_time_ms,speedup,efficiency,max_temp_diff_C,verified
+1,48.5,1.0,1.0,0.0,PASS
+2,25.2,1.9246031746031746,0.9623015873015873,1.42e-14,PASS
+4,13.8,3.514492753623188,0.878623188405797,2.84e-14,PASS
