@@ -317,3 +317,4 @@ std::string MulticoreBatchSolver::export_benchmark_to_csv(const BatchBenchmarkSu
 }
 
 } // namespace workbench::multicore
+
