@@ -207,3 +207,4 @@ std::string ThermalFeaSolver::export_convergence_to_csv(const std::vector<Conver
 }
 
 } // namespace workbench::fea
+
