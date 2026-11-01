@@ -117,3 +117,4 @@ This document provides a comprehensive, timestamped execution walkthrough of the
     * $\partial J/\partial v$: Analytical = $-0.7106820$, Numerical = $-0.7106820$, Error = $3.42 \times 10^{-11}$ [PASS]
     * $\partial J/\partial c$: Analytical = $-1.5378828$, Numerical = $-1.5378828$, Error = $5.21 \times 10^{-11}$ [PASS]
   * 100-step training loss curve: smooth monotonic logarithmic decay towards zero loss ($J_{100} < 0.005$).
+
