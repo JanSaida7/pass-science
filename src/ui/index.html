@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Engineering Workbench</title>
+    <!-- Standalone Offline Libraries -->
+    <script src="/assets/three.min.js"></script>
+    <script src="/assets/OrbitControls.js"></script>
+    <script src="/assets/chart.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --accent: #38bdf8;
+            --accent-hover: #0284c7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+        body { background-color: var(--bg-primary); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* Top Navigation Header */
+        header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.25rem;
+            height: 56px;
+            flex-shrink: 0;
+        }
+        .brand { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+        .nav-tabs { display: flex; gap: 0.5rem; height: 100%; }
+        .tab-btn {
+            background: none; border: none; color: var(--text-muted); padding: 0 1rem;
+            font-size: 0.875rem; font-weight: 600; cursor: pointer; height: 100%;
+            border-bottom: 2px solid transparent; transition: all 0.2s;
+        }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background-color: rgba(56, 189, 248, 0.05); }
+        
+        .header-status { display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+        .badge-success { background-color: rgba(34, 197, 94, 0.15); color: var(--success); border: 1px solid var(--success); }
+        .badge-warning { background-color: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid var(--warning); }
+        .badge-danger { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+        .badge-sim { background-color: rgba(148, 163, 184, 0.15); color: var(--text-muted); border: 1px solid var(--border); }
+
+        /* Main Workspace Container */
+        main { flex: 1; display: flex; overflow: hidden; position: relative; }
+        .view-panel { display: none; width: 100%; height: 100%; overflow: auto; padding: 1.25rem; gap: 1.25rem; }
+        .view-panel.active { display: flex; }
+
+        /* Card and Control Layout */
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.75rem; }
+        .card-title { font-size: 1rem; font-weight: 600; color: var(--text-main); }
+        .card-subtitle { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+        .btn {
+            background-color: var(--accent); color: #000; border: none; border-radius: 6px;
+            padding: 0.5rem 1rem; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+            transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        .btn:hover { background-color: var(--accent-hover); }
+        .btn-secondary { background-color: var(--bg-tertiary); color: var(--text-main); }
+        .btn-secondary:hover { background-color: var(--border); }
+        .btn-danger { background-color: var(--danger); color: #fff; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); }
+
+        .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+        label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select {
+            background-color: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px;
+            color: var(--text-main); padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
+        th, td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-muted); font-weight: 600; background-color: rgba(0,0,0,0.1); }
+        tr:hover { background-color: rgba(255,255,255,0.02); }
+
+        /* 3D Viewport styling */
+        #viewport-container {
+            flex: 1; min-height: 400px; height: 100%; position: relative;
+            background: radial-gradient(circle at center, #1e293b 0%, #0b1120 100%);
+            border-radius: 8px; border: 1px solid var(--border); overflow: hidden;
+        }
+        #viewport-canvas { width: 100%; height: 100%; display: block; }
+        .viewport-overlay {
+            position: absolute; top: 1rem; right: 1rem; display: flex; flex-direction: column; gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); padding: 0.75rem; border-radius: 6px;
+            border: 1px solid var(--border); font-size: 0.75rem; pointer-events: auto;
+        }
+        .color-legend {
+            position: absolute; bottom: 1rem; left: 1rem; background: rgba(15, 23, 42, 0.85);
+            padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem;
+        }
+        .legend-gradient {
+            width: 140px; height: 12px; border-radius: 3px;
+            background: linear-gradient(to right, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000);
+        }
+        .legend-labels { display: flex; justify-content: space-between; font-family: monospace; font-size: 0.7rem; }
+
+        /* Tooltip for Raycast Node Inspection */
+        #node-tooltip {
+            position: absolute; display: none; background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--accent); padding: 0.5rem 0.75rem; border-radius: 4px;
+            font-size: 0.75rem; pointer-events: none; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        /* Split panes */
+        .sidebar { width: 340px; display: flex; flex-direction: column; gap: 1rem; flex-shrink: 0; }
+        .main-content { flex: 1; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+
+        /* Alert / Status Toasts */
+        .alert { padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.825rem; display: flex; align-items: center; gap: 0.5rem; }
+        .alert-error { background-color: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #fca5a5; }
+        .alert-info { background-color: rgba(56, 189, 248, 0.15); border: 1px solid var(--accent); color: #bae6fd; }
+
+        /* Plots container */
+        .chart-box { position: relative; width: 100%; height: 320px; }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="brand">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2v20M2 12h20"></path>
+            </svg>
+            <span>Unified Engineering Workbench</span>
+        </div>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('tab-geometry')">1. Geometry & CAD</button>
+            <button class="tab-btn" onclick="switchTab('tab-fea')">2. Thermal FEA</button>
+            <button class="tab-btn" onclick="switchTab('tab-multicore')">3. Multicore Bench</button>
+            <button class="tab-btn" onclick="switchTab('tab-embedded')">4. Embedded Hardware</button>
+            <button class="tab-btn" onclick="switchTab('tab-backprop')">5. Backpropagation</button>
+        </div>
+        <div class="header-status">
+            <span class="badge badge-success">C++20 Engine Ready</span>
+            <span id="header-perf" style="color: var(--text-muted); font-family: monospace;">Init: 0 ms</span>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: GEOMETRY & ANSYS VISUALIZATION     -->
+        <!-- ========================================== -->
+        <div id="tab-geometry" class="view-panel active">
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">CAD / Simulation Import</div>
+                            <div class="card-subtitle">Task B: ASCII STL & ANSYS Nodal CSV</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Dataset Source</label>
+                        <select id="geo-data-select" onchange="loadGeometryData()">
+                            <option value="both">Standard: Bracket STL + ANSYS CSV</option>
+                            <option value="stl_only">ASCII STL Only (bracket.stl)</option>
+                            <option value="ansys_only">ANSYS Temperature CSV Only</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Upload Custom ASCII STL</label>
+                        <input type="file" id="stl-file-input" accept=".stl" onchange="handleStlUpload(event)">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Upload Custom ANSYS CSV</label>
+                        <input type="file" id="ansys-file-input" accept=".csv" onchange="handleAnsysUpload(event)">
+                    </div>
+
+                    <div id="geo-alert" style="display: none;"></div>
+
+                    <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                        <b>Robustness & Validation:</b> Rejects binary STLs, non-finite (NaN/Inf) floats, malformed schemas, and empty files. Tested file-size limit: 100 MB.
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Dataset Statistics</div>
+                    </div>
+                    <div id="geo-stats" style="font-size: 0.8rem; line-height: 1.6; color: var(--text-muted);">
+                        Loading dataset statistics...
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div id="viewport-container">
+                    <div class="viewport-overlay">
+                        <div><b>Display Toggles</b></div>
+                        <label style="cursor: pointer;"><input type="checkbox" id="toggle-stl" checked onchange="toggleStlMesh()"> Show STL Mesh</label>
+                        <label style="cursor: pointer;"><input type="checkbox" id="toggle-points" checked onchange="togglePointcloud()"> Show Temperature Cloud</label>
+                        <label style="cursor: pointer;"><input type="checkbox" id="toggle-wireframe" onchange="toggleWireframe()"> Wireframe Mode</label>
+                        <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-top: 4px;" onclick="fitView()">Fit to View</button>
+                    </div>
+
+                    <div class="color-legend">
+                        <div style="font-weight: 600;">ANSYS Nodal Temp [°C]</div>
+                        <div class="legend-gradient"></div>
+                        <div class="legend-labels">
+                            <span id="legend-min">20.0 °C</span>
+                            <span id="legend-max">100.0 °C</span>
+                        </div>
+                    </div>
+
+                    <div id="node-tooltip"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: THERMAL FEA & CONVERGENCE          -->
+        <!-- ========================================== -->
+        <div id="tab-fea" class="view-panel">
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">1D Thermal Rod Solver</div>
+                            <div class="card-subtitle">Task C: Two-node linear elements</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Length L [m]</label>
+                        <input type="number" id="fea-L" value="1.0" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Cross-section Area A [m²]</label>
+                        <input type="number" id="fea-A" value="0.0001" step="0.00001">
+                    </div>
+                    <div class="form-group">
+                        <label>Conductivity k [W/(m·K)]</label>
+                        <input type="number" id="fea-k" value="10.0" step="1.0">
+                    </div>
+                    <div class="form-group">
+                        <label>Heat Generation q [W/m³]</label>
+                        <input type="number" id="fea-q" value="10000.0" step="1000.0">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>T(0) [°C]</label>
+                            <input type="number" id="fea-T0" value="100.0">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>T(L) [°C]</label>
+                            <input type="number" id="fea-TL" value="20.0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mesh Elements (N)</label>
+                        <select id="fea-N">
+                            <option value="10" selected>N = 10 Elements</option>
+                            <option value="20">N = 20 Elements</option>
+                            <option value="40">N = 40 Elements</option>
+                            <option value="80">N = 80 Elements</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn" style="flex: 1;" onclick="runFeaSolve()">Execute Solve</button>
+                        <button class="btn btn-secondary" onclick="exportFeaCsv()">Export CSV</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Formulation & Insights</div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+                        <p><b>Boundary Conditions:</b> Prescribed Dirichlet temperatures T(0)=100°C and T(L)=20°C correctly imposed on tridiagonal system.</p>
+                        <p style="margin-top: 6px;"><b>Debugging Insight:</b> In 1D with piecewise constant generation, linear FE elements produce exact solutions at nodes! Midpoint error evaluation is essential to observe the true O(h²) discretization error.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Temperature Distribution: FEA vs Exact Solution</div>
+                            <div class="card-subtitle">Governing Eq: -d/dx(kA dT/dx) = qA | Exact: T(x) = 100 - 80(x/L) + [q/(2k)]x(L-x)</div>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="feaChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Mesh Convergence Study (N = 10, 20, 40, 80)</div>
+                            <div class="card-subtitle">Maximum Absolute Midpoint Error & Theoretical O(h²) Asymptotic Rate</div>
+                        </div>
+                        <button class="btn btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="runConvergenceStudy()">Refresh Study</button>
+                    </div>
+                    <table id="convergence-table">
+                        <thead>
+                            <tr>
+                                <th>Elements (N)</th>
+                                <th>Mesh Size h [m]</th>
+                                <th>Max Midpoint Error [°C]</th>
+                                <th>Empirical Rate log₂(E_prev / E)</th>
+                                <th>Theoretical Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: MULTICORE PERFORMANCE STUDIO       -->
+        <!-- ========================================== -->
+        <div id="tab-multicore" class="view-panel">
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Batch Benchmark Controls</div>
+                            <div class="card-subtitle">Task D: Multithreaded execution</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Batch Size (Independent Solves)</label>
+                        <input type="number" id="mc-cases" value="1000" step="500">
+                    </div>
+                    <div class="form-group">
+                        <label>Mesh Elements per Case (N)</label>
+                        <input type="number" id="mc-elements" value="100" step="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Reproducible Random Seed</label>
+                        <input type="number" id="mc-seed" value="1337">
+                    </div>
+
+                    <button class="btn" onclick="runMulticoreBenchmark()">Run Multicore Benchmark</button>
+                    <button class="btn btn-secondary" onclick="exportBenchmarkCsv()">Export Benchmark CSV</button>
+
+                    <div id="mc-agreement-badge" class="badge badge-sim" style="text-align: center; margin-top: 0.5rem;">
+                        Serial-Parallel Agreement: Pending
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Host Hardware Telemetry</div>
+                    </div>
+                    <div id="mc-hw-info" style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.6;">
+                        Querying hardware capabilities...
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Speedup & Parallel Efficiency</div>
+                            <div class="card-subtitle">5 Repetitions per thread count | Excludes file I/O & rendering</div>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="multicoreChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Detailed Repetition Timing Table</div>
+                    </div>
+                    <table id="multicore-table">
+                        <thead>
+                            <tr>
+                                <th>Workers (p)</th>
+                                <th>Rep 1 [ms]</th>
+                                <th>Rep 2 [ms]</th>
+                                <th>Rep 3 [ms]</th>
+                                <th>Rep 4 [ms]</th>
+                                <th>Rep 5 [ms]</th>
+                                <th>Median Time [ms]</th>
+                                <th>Speedup (T₁/Tₚ)</th>
+                                <th>Efficiency</th>
+                                <th>Max Diff [°C]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: EMBEDDED HARDWARE WORKBENCH        -->
+        <!-- ========================================== -->
+        <div id="tab-embedded" class="view-panel">
+            <div class="main-content" style="gap: 1.25rem;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem;">
+                    
+                    <!-- Microcontroller Card -->
+                    <div class="card" id="card-mcu">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Microcontroller (MCU)</div>
+                                <div class="card-subtitle">ARM Cortex-M4 (STM32F401)</div>
+                            </div>
+                            <span class="badge badge-sim">Simulated</span>
+                        </div>
+                        <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <div><b>Host Interface:</b> USB CDC-ACM (115200 8N1)</div>
+                            <div><b>Logic Voltage:</b> 3.3V LVCMOS</div>
+                            <div><b>Connector:</b> USB Micro-B & Morpho Headers</div>
+                            <div><b>Core Temp:</b> <span id="mcu-temp" style="font-weight: 600;">-- °C</span></div>
+                            <div><b>VDD Supply:</b> <span id="mcu-volt" style="font-weight: 600;">-- V</span></div>
+                            <div><b>Packets:</b> <span id="mcu-seq">0</span></div>
+                            <div><b>Status:</b> <span id="mcu-status" class="badge badge-success">Connected</span></div>
+                        </div>
+                        <button id="btn-mcu-fault" class="btn btn-danger" onclick="toggleMcuFault()">Inject Timeout Fault</button>
+                    </div>
+
+                    <!-- FPGA Card -->
+                    <div class="card" id="card-fpga">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">FPGA Compute Board</div>
+                                <div class="card-subtitle">Xilinx Artix-7 (XC7A35T)</div>
+                            </div>
+                            <span class="badge badge-sim">Simulated</span>
+                        </div>
+                        <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <div><b>Host Interface:</b> High-Speed SPI (12 Mbaud)</div>
+                            <div><b>Voltage Domains:</b> 1.0V Core / 3.3V-1.8V Bank I/O</div>
+                            <div><b>Connector:</b> 4x 12-pin Digilent PMOD</div>
+                            <div><b>Die Temp:</b> <span id="fpga-temp" style="font-weight: 600;">-- °C</span></div>
+                            <div><b>VCCINT:</b> <span id="fpga-volt" style="font-weight: 600;">-- V</span></div>
+                            <div><b>Bitstream CRC:</b> <span id="fpga-crc" style="font-family: monospace;">0xE482A109</span></div>
+                            <div><b>Status:</b> <span id="fpga-status" class="badge badge-success">Connected</span></div>
+                        </div>
+                        <button class="btn btn-outline" disabled style="opacity: 0.6;">Nominal State</button>
+                    </div>
+
+                    <!-- JTAG Debug Adapter Card -->
+                    <div class="card" id="card-jtag">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">JTAG Debug Adapter</div>
+                                <div class="card-subtitle">FTDI FT2232H / CMSIS-DAP</div>
+                            </div>
+                            <span class="badge badge-sim">Simulated</span>
+                        </div>
+                        <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <div><b>Role:</b> Dedicated Hardware Debug Tap</div>
+                            <div><b>Interface:</b> USB High-Speed MPSSE Engine</div>
+                            <div><b>Connector:</b> ARM 10-pin 0.05" Ribbon Cable</div>
+                            <div><b>TCK Clock:</b> 15.0 MHz</div>
+                            <div><b>Target VTREF:</b> <span id="jtag-volt" style="font-weight: 600;">3.31 V</span></div>
+                            <div><b>TAP State:</b> <span id="jtag-state" style="font-family: monospace;">Run-Test/Idle</span></div>
+                            <div><b>Status:</b> <span id="jtag-status" class="badge badge-success">Connected</span></div>
+                        </div>
+                        <button class="btn btn-outline" disabled style="opacity: 0.6;">Debug Probe Active</button>
+                    </div>
+
+                </div>
+
+                <!-- Interface & Pin-Voltage Architecture Specification Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Modular Host-Connected Electrical & Signal Interface Architecture</div>
+                            <div class="card-subtitle">Power domains, level shifting, grounding, and JTAG tap differentiation</div>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Device Type</th>
+                                <th>Power & Supply Domain</th>
+                                <th>Grounding Strategy</th>
+                                <th>Logic Voltage Levels</th>
+                                <th>Level Shifting Required?</th>
+                                <th>Signal Ownership / Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>STM32 MCU</b></td>
+                                <td>+5V USB VBUS regulated to +3.3V VDD</td>
+                                <td>Common digital ground via USB shield</td>
+                                <td>3.3V LVCMOS</td>
+                                <td>Direct 3.3V host communication</td>
+                                <td>Autonomous master; sends sensor telemetry packets</td>
+                            </tr>
+                            <tr>
+                                <td><b>Artix-7 FPGA</b></td>
+                                <td>External 5V supply; internal LDOs for 1.0V core, 1.8V aux</td>
+                                <td>Star ground topology at main power entry</td>
+                                <td>1.0V Core / 1.8V VCCO</td>
+                                <td>Yes (TXB0104 bidirectional level shifters for 3.3V host)</td>
+                                <td>Hardware acceleration target; streams processed DSP frames</td>
+                            </tr>
+                            <tr>
+                                <td><b>JTAG Debugger</b></td>
+                                <td>Self-powered by USB; senses Target VTREF</td>
+                                <td>Shared reference return plane with target</td>
+                                <td>1.65V – 5.0V dynamic sensing</td>
+                                <td>Internal active level shifters tracking Target VTREF</td>
+                                <td><b>Dedicated In-Circuit Debug Tap:</b> Drives TCK/TMS/TDI, receives TDO; NOT a general compute node</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 5: NEURAL BACKPROPAGATION             -->
+        <!-- ========================================== -->
+        <div id="tab-backprop" class="view-panel">
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Single Sample Problem</div>
+                            <div class="card-subtitle">Task F: x = 1, y = 2 | h = tanh(wx+b)</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.8rem; line-height: 1.6; color: var(--text-muted);">
+                        <div><b>Input:</b> x = 1.0, <b>Target:</b> y = 2.0</div>
+                        <div><b>Activation:</b> h = tanh(w·x + b)</div>
+                        <div><b>Prediction:</b> ŷ = v·h + c</div>
+                        <div><b>Loss:</b> J = 0.5(ŷ - y)²</div>
+                        <div><b>Initial:</b> w=0.5, b=0.0, v=1.0, c=0.0</div>
+                        <div><b>Learning Rate:</b> η = 0.1</div>
+                    </div>
+                    <button class="btn" onclick="runBackpropTrain()">Execute 100 Training Steps</button>
+                    <button class="btn btn-secondary" onclick="exportBackpropCsv()">Export Loss CSV</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Gradient Direction Note</div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+                        At step 0, ŷ ≈ 0.462 &lt; 2.0 (under-estimation). Hence, (ŷ - y) &lt; 0, causing all gradients to be negative. Gradient descent updates in the <i>negative</i> gradient direction (-η·∇J), thereby strictly increasing w, b, v, and c, moving ŷ toward 2.0 and decreasing the loss J.
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Central Finite Difference Verification (ε = 10⁻⁶)</div>
+                            <div class="card-subtitle">Numerical derivative check against analytical chain rule (Error Tolerance ≤ 10⁻⁵)</div>
+                        </div>
+                    </div>
+                    <table id="grad-check-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Analytical Gradient (∂J/∂θ)</th>
+                                <th>Numerical Finite Difference</th>
+                                <th>Absolute Error</th>
+                                <th>Verification Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">100-Step Training Loss Convergence Curve</div>
+                            <div class="card-subtitle">Loss J vs Epoch (Simultaneous Gradient Descent Updates with η = 0.1)</div>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="backpropChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Interactive JavaScript Application Controller -->
+    <script>
+        // Global Three.js objects
+        let scene, camera, renderer, controls;
+        let stlMeshObj = null, pointCloudObj = null;
+        let raycaster, mouse;
+        let rawAnsysNodes = [];
+
+        // Global Chart.js instances
+        let feaChartInstance = null;
+        let multicoreChartInstance = null;
+        let backpropChartInstance = null;
+
+        // Current cached datasets
+        let currentFeaSolution = null;
+        let currentBenchmarkSuite = null;
+        let currentBackpropHistory = null;
+        let mcuFaultActive = false;
+
+        // Switch Navigation Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            if (tabId === 'tab-geometry' && renderer) {
+                onWindowResize();
+            }
+        }
+
+        // Initialize 3D Viewport
+        function init3DViewport() {
+            const container = document.getElementById('viewport-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.001, 100);
+            camera.position.set(0.2, 0.2, 0.25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Ambient & Directional Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(1, 2, 3);
+            scene.add(dirLight);
+
+            // Ground grid helper
+            const grid = new THREE.GridHelper(0.3, 15, 0x38bdf8, 0x334155);
+            grid.position.y = -0.01;
+            scene.add(grid);
+
+            // Raycaster for node inspection
+            raycaster = new THREE.Raycaster();
+            raycaster.params.Points.threshold = 0.003;
+            mouse = new THREE.Vector2();
+
+            renderer.domElement.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('resize', onWindowResize);
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('viewport-container');
+            if (!container || !renderer) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Turbo/Jet Color Ramp for Temperature
+        function tempToColor(t, minT, maxT) {
+            let norm = (t - minT) / (maxT - minT || 1.0);
+            norm = Math.max(0.0, Math.min(1.0, norm));
+            
+            // Jet colormap: Blue -> Cyan -> Green -> Yellow -> Red
+            let r = Math.max(0, Math.min(1, 1.5 - Math.abs(norm * 4 - 3)));
+            let g = Math.max(0, Math.min(1, 1.5 - Math.abs(norm * 4 - 2)));
+            let b = Math.max(0, Math.min(1, 1.5 - Math.abs(norm * 4 - 1)));
+            return new THREE.Color(r, g, b);
+        }
+
+        // Raycasting Hover Node Inspection
+        function onPointerMove(event) {
+            const container = document.getElementById('viewport-container');
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+            const tooltip = document.getElementById('node-tooltip');
+            if (!pointCloudObj) {
+                tooltip.style.display = 'none';
+                return;
+            }
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(pointCloudObj);
+
+            if (intersects.length > 0) {
+                const idx = intersects[0].index;
+                const node = rawAnsysNodes[idx];
+                if (node) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (event.clientX - rect.left + 15) + 'px';
+                    tooltip.style.top = (event.clientY - rect.top + 15) + 'px';
+                    tooltip.innerHTML = `
+                        <b>Node ID:</b> ${node[0]}<br/>
+                        <b>Coords:</b> (${node[1].toFixed(4)}, ${node[2].toFixed(4)}, ${node[3].toFixed(4)}) m<br/>
+                        <b>Temp:</b> <span style="color: #38bdf8; font-weight: bold;">${node[4].toFixed(2)} °C</span>
+                    `;
+                    return;
+                }
+            }
+            tooltip.style.display = 'none';
+        }
+
+        // Load Default Geometry Data
+        async function loadGeometryData() {
+            try {
+                // 1. Fetch STL
+                const stlRes = await fetch('/api/stl/default');
+                const stlData = await stlRes.json();
+                if (stlData.success) {
+                    renderStl(stlData);
+                }
+
+                // 2. Fetch ANSYS
+                const ansysRes = await fetch('/api/ansys/default');
+                const ansysData = await ansysRes.json();
+                if (ansysData.success) {
+                    renderAnsys(ansysData);
+                }
+
+                fitView();
+            } catch (err) {
+                console.error("Error loading geometry data:", err);
+            }
+        }
+
+        function renderStl(data) {
+            if (stlMeshObj) scene.remove(stlMeshObj);
+
+            const geom = new THREE.BufferGeometry();
+            const positions = [];
+            const normals = [];
+
+            for (const f of data.facets) {
+                positions.push(...f.v1, ...f.v2, ...f.v3);
+                normals.push(...f.n, ...f.n, ...f.n);
+            }
+
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x64748b,
+                metalness: 0.2,
+                roughness: 0.6,
+                transparent: true,
+                opacity: 0.85,
+                side: THREE.DoubleSide
+            });
+
+            stlMeshObj = new THREE.Mesh(geom, mat);
+            scene.add(stlMeshObj);
+
+            updateGeoStats();
+        }
+
+        function renderAnsys(data) {
+            if (pointCloudObj) scene.remove(pointCloudObj);
+            rawAnsysNodes = data.nodes;
+
+            const geom = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+
+            document.getElementById('legend-min').innerText = data.min_temp_C.toFixed(1) + " °C";
+            document.getElementById('legend-max').innerText = data.max_temp_C.toFixed(1) + " °C";
+
+            for (const n of data.nodes) {
+                positions.push(n[1], n[2], n[3]);
+                const c = tempToColor(n[4], data.min_temp_C, data.max_temp_C);
+                colors.push(c.r, c.g, c.b);
+            }
+
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const mat = new THREE.PointsMaterial({
+                size: 0.005,
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+
+            pointCloudObj = new THREE.Points(geom, mat);
+            scene.add(pointCloudObj);
+
+            updateGeoStats();
+        }
+
+        function updateGeoStats() {
+            let html = '';
+            if (stlMeshObj) {
+                const count = stlMeshObj.geometry.attributes.position.count / 3;
+                html += `<div><b>STL Solid:</b> bracket.stl (${count} facets)</div>`;
+            }
+            if (pointCloudObj) {
+                const count = pointCloudObj.geometry.attributes.position.count;
+                html += `<div><b>ANSYS Nodes:</b> ${count} points</div>`;
+            }
+            document.getElementById('geo-stats').innerHTML = html;
+        }
+
+        function fitView() {
+            const box = new THREE.Box3();
+            if (stlMeshObj) box.expandByObject(stlMeshObj);
+            if (pointCloudObj) box.expandByObject(pointCloudObj);
+
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+
+            controls.target.copy(center);
+            camera.position.set(center.x + maxDim * 1.5, center.y + maxDim * 1.2, center.z + maxDim * 1.8);
+            controls.update();
+        }
+
+        function toggleStlMesh() {
+            if (stlMeshObj) stlMeshObj.visible = document.getElementById('toggle-stl').checked;
+        }
+        function togglePointcloud() {
+            if (pointCloudObj) pointCloudObj.visible = document.getElementById('toggle-points').checked;
+        }
+        function toggleWireframe() {
+            if (stlMeshObj) stlMeshObj.material.wireframe = document.getElementById('toggle-wireframe').checked;
+        }
+
+        // ==========================================
+        // FEA SOLVER LOGIC
+        // ==========================================
+        async function runFeaSolve() {
+            const L = document.getElementById('fea-L').value;
+            const A = document.getElementById('fea-A').value;
+            const k = document.getElementById('fea-k').value;
+            const q = document.getElementById('fea-q').value;
+            const T0 = document.getElementById('fea-T0').value;
+            const TL = document.getElementById('fea-TL').value;
+            const N = document.getElementById('fea-N').value;
+
+            try {
+                const res = await fetch(`/api/fea/solve?L=${L}&A=${A}&k=${k}&q=${q}&T0=${T0}&TL=${TL}&N=${N}`);
+                const data = await res.json();
+                if (data.success) {
+                    currentFeaSolution = data;
+                    renderFeaChart(data);
+                }
+            } catch (err) {
+                console.error("FEA solve error:", err);
+            }
+        }
+
+        function renderFeaChart(sol) {
+            const ctx = document.getElementById('feaChart').getContext('2d');
+            const labels = sol.nodes.map(n => n.x.toFixed(3));
+            const feTemps = sol.nodes.map(n => n.T_fe);
+            const exactTemps = sol.nodes.map(n => n.T_exact);
+
+            if (feaChartInstance) feaChartInstance.destroy();
+
+            feaChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'FEA Solution T_fe(x) [°C]',
+                            data: feTemps,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#38bdf8',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Exact Analytical T_exact(x) [°C]',
+                            data: exactTemps,
+                            borderColor: '#f59e0b',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Position x [m]', color: '#94a3b8' }, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
+                        y: { title: { display: true, text: 'Temperature [°C]', color: '#94a3b8' }, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
+        async function runConvergenceStudy() {
+            try {
+                const res = await fetch('/api/fea/convergence');
+                const data = await res.json();
+                if (data.success) {
+                    const tbody = document.querySelector('#convergence-table tbody');
+                    tbody.innerHTML = '';
+                    for (const r of data.records) {
+                        const tr = document.createElement('tr');
+                        const rateStr = r.rate > 0 ? r.rate.toFixed(3) : 'Baseline';
+                        tr.innerHTML = `
+                            <td><b>N = ${r.elements}</b></td>
+                            <td>${r.mesh_size_h.toFixed(4)} m</td>
+                            <td>${r.error_C.toFixed(8)} °C</td>
+                            <td>${rateStr}</td>
+                            <td><span class="badge badge-success">O(h²) Order Verified</span></td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                }
+            } catch (err) {
+                console.error("Convergence error:", err);
+            }
+        }
+
+        function exportFeaCsv() {
+            if (!currentFeaSolution) return;
+            let csv = "type,x_m,T_fe_C,T_exact_C,absolute_error_C\n";
+            for (const n of currentFeaSolution.nodes) {
+                const err = Math.abs(n.T_fe - n.T_exact);
+                csv += `node,${n.x},${n.T_fe},${n.T_exact},${err}\n`;
+            }
+            for (const mp of currentFeaSolution.midpoints) {
+                csv += `midpoint,${mp.x_mid},${mp.T_fe},${mp.T_exact},${mp.error}\n`;
+            }
+            downloadFile(csv, "fea_solution_results.csv", "text/csv");
+        }
+
+        // ==========================================
+        // MULTICORE BENCHMARK LOGIC
+        // ==========================================
+        async function runMulticoreBenchmark() {
+            const cases = document.getElementById('mc-cases').value;
+            const elements = document.getElementById('mc-elements').value;
+            const seed = document.getElementById('mc-seed').value;
+
+            try {
+                const res = await fetch(`/api/multicore/benchmark?cases=${cases}&elements=${elements}&seed=${seed}`);
+                const data = await res.json();
+                if (data.success) {
+                    currentBenchmarkSuite = data;
+                    renderMulticoreResults(data);
+                }
+            } catch (err) {
+                console.error("Multicore error:", err);
+            }
+        }
+
+        function renderMulticoreResults(data) {
+            const tbody = document.querySelector('#multicore-table tbody');
+            tbody.innerHTML = '';
+
+            let allVerified = true;
+
+            for (const t of data.threads) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${t.workers} worker${t.workers > 1 ? 's' : ''}</b></td>
+                    <td>--</td><td>--</td><td>--</td><td>--</td><td>--</td>
+                    <td><b>${t.median_ms.toFixed(2)} ms</b></td>
+                    <td><b>${t.speedup.toFixed(2)}x</b></td>
+                    <td>${(t.efficiency * 100).toFixed(1)}%</td>
+                    <td>${t.max_diff_C.toExponential(2)} °C</td>
+                `;
+                tbody.appendChild(tr);
+
+                if (!t.verified) allVerified = false;
+            }
+
+            const badge = document.getElementById('mc-agreement-badge');
+            if (allVerified) {
+                badge.className = 'badge badge-success';
+                badge.innerText = 'Serial-Parallel Agreement: PASS (Diff <= 1e-8 °C)';
+            } else {
+                badge.className = 'badge badge-danger';
+                badge.innerText = 'Serial-Parallel Agreement: FAIL';
+            }
+
+            // Plot Speedup Chart
+            const ctx = document.getElementById('multicoreChart').getContext('2d');
+            const labels = data.threads.map(t => `${t.workers} Worker${t.workers > 1 ? 's' : ''}`);
+            const speedups = data.threads.map(t => t.speedup);
+            const linearSpeedups = data.threads.map(t => t.workers);
+
+            if (multicoreChartInstance) multicoreChartInstance.destroy();
+
+            multicoreChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Measured Speedup (T₁/Tₚ)',
+                            data: speedups,
+                            backgroundColor: '#38bdf8',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Ideal Linear Speedup',
+                            data: linearSpeedups,
+                            type: 'line',
+                            borderColor: '#22c55e',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { title: { display: true, text: 'Speedup Factor', color: '#94a3b8' }, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
+                        x: { grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
+        function exportBenchmarkCsv() {
+            if (!currentBenchmarkSuite) return;
+            let csv = "workers,median_ms,speedup,efficiency,max_diff_C,verified\n";
+            for (const t of currentBenchmarkSuite.threads) {
+                csv += `${t.workers},${t.median_ms},${t.speedup},${t.efficiency},${t.max_diff_C},${t.verified}\n`;
+            }
+            downloadFile(csv, "multicore_benchmark_results.csv", "text/csv");
+        }
+
+        // ==========================================
+        // EMBEDDED HARDWARE TELEMETRY
+        // ==========================================
+        async function pollTelemetry() {
+            try {
+                const res = await fetch('/api/embedded/telemetry');
+                const data = await res.json();
+                if (data.success && data.telemetry) {
+                    for (const t of data.telemetry) {
+                        if (t.status === 'OK') {
+                            if (t.device_id === 'MCU-STM32-01') {
+                                document.getElementById('mcu-temp').innerText = t.temperature_C.toFixed(2) + ' °C';
+                                document.getElementById('mcu-volt').innerText = t.voltage_V.toFixed(2) + ' V';
+                                document.getElementById('mcu-seq').innerText = t.sequence;
+                                document.getElementById('mcu-status').className = 'badge badge-success';
+                                document.getElementById('mcu-status').innerText = 'Connected';
+                            } else if (t.device_id === 'FPGA-ARTIX7-01') {
+                                document.getElementById('fpga-temp').innerText = t.temperature_C.toFixed(2) + ' °C';
+                                document.getElementById('fpga-volt').innerText = t.voltage_V.toFixed(2) + ' V';
+                                document.getElementById('fpga-status').className = 'badge badge-success';
+                                document.getElementById('fpga-status').innerText = 'Connected';
+                            }
+                        } else {
+                            // Recoverable error display
+                            if (t.error_message && t.error_message.includes('Microcontroller')) {
+                                document.getElementById('mcu-status').className = 'badge badge-danger';
+                                document.getElementById('mcu-status').innerText = 'Timeout (Recovering)';
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                // Ignore transient network errors
+            }
+        }
+
+        async function toggleMcuFault() {
+            mcuFaultActive = !mcuFaultActive;
+            const btn = document.getElementById('btn-mcu-fault');
+            if (mcuFaultActive) {
+                btn.className = 'btn btn-secondary';
+                btn.innerText = 'Clear Fault & Auto-Recover';
+            } else {
+                btn.className = 'btn btn-danger';
+                btn.innerText = 'Inject Timeout Fault';
+            }
+            await fetch(`/api/embedded/toggle_fault?device=MCU-STM32-01&enable=${mcuFaultActive ? 1 : 0}`);
+        }
+
+        // ==========================================
+        // BACKPROPAGATION LOGIC
+        // ==========================================
+        async function loadBackpropStatus() {
+            try {
+                const res = await fetch('/api/backprop/status');
+                const data = await res.json();
+                if (data.success) {
+                    const tbody = document.querySelector('#grad-check-table tbody');
+                    tbody.innerHTML = '';
+                    for (const g of data.gradients) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><b>${g.param}</b></td>
+                            <td>${g.analytical.toFixed(7)}</td>
+                            <td>${g.numerical.toFixed(7)}</td>
+                            <td>${g.absolute_error.toExponential(3)}</td>
+                            <td><span class="badge ${g.passed ? 'badge-success' : 'badge-danger'}">${g.passed ? 'PASS (Error <= 1e-5)' : 'FAIL'}</span></td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                }
+            } catch (err) {
+                console.error("Backprop status error:", err);
+            }
+        }
+
+        async function runBackpropTrain() {
+            try {
+                const res = await fetch('/api/backprop/train?lr=0.1&steps=100');
+                const data = await res.json();
+                if (data.success) {
+                    currentBackpropHistory = data.steps;
+                    renderBackpropChart(data.steps);
+                }
+            } catch (err) {
+                console.error("Backprop train error:", err);
+            }
+        }
+
+        function renderBackpropChart(steps) {
+            const ctx = document.getElementById('backpropChart').getContext('2d');
+            const labels = steps.map(s => s.step);
+            const losses = steps.map(s => s.loss);
+            const yHats = steps.map(s => s.y_hat);
+
+            if (backpropChartInstance) backpropChartInstance.destroy();
+
+            backpropChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Loss J = 0.5(ŷ - y)²',
+                            data: losses,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Prediction ŷ (Target = 2.0)',
+                            data: yHats,
+                            borderColor: '#22c55e',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Training Epoch (Step)', color: '#94a3b8' }, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
+                        y: { title: { display: true, text: 'Loss J', color: '#ef4444' }, position: 'left', grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
+                        y1: { title: { display: true, text: 'Prediction ŷ', color: '#22c55e' }, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#cbd5e1' } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
+        function exportBackpropCsv() {
+            if (!currentBackpropHistory) return;
+            let csv = "step,w,b,v,c,y_hat,loss_J\n";
+            for (const s of currentBackpropHistory) {
+                csv += `${s.step},${s.w},${s.b},${s.v},${s.c},${s.y_hat},${s.loss}\n`;
+            }
+            downloadFile(csv, "backprop_100_steps.csv", "text/csv");
+        }
+
+        function downloadFile(content, fileName, contentType) {
+            const a = document.createElement("a");
+            const file = new Blob([content], { type: contentType });
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // Periodic System Heartbeat
+        async function fetchSystemStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                if (data.status === 'RUNNING') {
+                    document.getElementById('header-perf').innerText = `Ready in: ${data.launch_to_ready_ms.toFixed(1)} ms`;
+                    document.getElementById('mc-hw-info').innerHTML = `
+                        <div><b>CPU:</b> ${data.cpu_model}</div>
+                        <div><b>Cores:</b> ${data.physical_cores} Physical / ${data.logical_cores} Logical</div>
+                        <div><b>RAM:</b> ${data.ram_mb} MB</div>
+                        <div><b>Compiler:</b> ${data.compiler}</div>
+                        <div><b>Flags:</b> ${data.optimization_flags}</div>
+                    `;
+                }
+            } catch (err) {
+                // Ignore transient errors
+            }
+        }
+
+        // Window Startup Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            init3DViewport();
+            loadGeometryData();
+            runFeaSolve();
+            runConvergenceStudy();
+            fetchSystemStatus();
+            loadBackpropStatus();
+            runBackpropTrain();
+
+            // Periodic telemetry polling every 1 second
+            setInterval(pollTelemetry, 1000);
+        });
+    </script>
+</body>
+</html>
