@@ -85,3 +85,4 @@ All numerical algorithms, finite element assemblies, thread-pool mechanisms, and
   * Standalone Windows launcher (`Launch.exe`) and build automation scripts.
   * Responsive engineering workbench user interface (`src/ui/index.html`).
   * Verification test suite (`tests/main_tests.cpp`), technical report (`docs/REPORT.md`), and documentation.
+

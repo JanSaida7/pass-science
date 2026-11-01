@@ -97,3 +97,4 @@ cmake --build build --config Release
 1. **Binary STL Handling:** In strict adherence to Task B specifications, binary STL files are rejected with a clear actionable error prompt instructing the user to supply ASCII STL geometry.
 2. **Thermal FEA Dimensionality:** The finite element solver is formulated specifically for steady-state 1D conduction with uniform volumetric generation and insulated lateral surfaces. Higher-order 2D/3D thermal FEA is outside the assignment scope.
 3. **Embedded Hardware Mocks:** Physical wiring, real silicon programming, and FPGA bitstream synthesis are simulated via C++ mock adapters exhibiting realistic physics, packet telemetry, and recoverable timeout failures.
+

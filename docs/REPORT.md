@@ -157,3 +157,4 @@ Over 100 training steps, loss smoothly decayed from $J_0 = 1.1825$ to $J_{100} <
 * **Limitations:**
   * ASCII STL parser enforces ASCII specification; binary STLs must be converted prior to import.
   * Thermal FEA solver assumes 1D conduction with uniform lateral insulation; higher-order multidimensional heat transfer is outside the assignment scope.
+
