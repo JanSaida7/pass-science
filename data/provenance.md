@@ -35,3 +35,4 @@ This directory contains the sample dataset for CAD geometry visualization and AN
   * Governing Profile:
     $$T(x, y, z) = 100.0 - 75.0\left(\frac{x}{0.1}\right) + 20.0 \sin\left(\pi \frac{x}{0.1}\right)\left(1 - \frac{y}{0.05}\right) - 5.0\left(\frac{z}{0.05}\right)$$
   * Range: $T_{\min} \approx 20.00^\circ\text{C}$, $T_{\max} \approx 108.54^\circ\text{C}$.
+
