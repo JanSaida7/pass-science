@@ -20,3 +20,4 @@ copy /Y "build\Release\run_tests.exe" "bin\run_tests.exe"
 copy /Y "build\Release\Launch.exe" "Launch.exe"
 
 echo Build completed successfully.
+
