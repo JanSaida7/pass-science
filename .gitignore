@@ -17,4 +17,6 @@ Desktop.ini
 # Temporary / Scratch
 *.tmp
 *.log
+__pycache__/
+*.pyc
 
